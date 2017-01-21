@@ -1,3 +1,5 @@
+[![BuildStatus](https://travis-ci.org/rightmove/mac-setup.svg?branch=master)](https://travis-ci.org/rightmove/mac-setup)
+
 mac-setup
 ======
 
