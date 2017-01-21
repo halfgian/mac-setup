@@ -1,0 +1,166 @@
+#!/bin/sh
+
+# Welcome to the Rightmove laptop script!
+# This script is heavily influenced by the original Thoughbot script.
+# Be prepared to turn your laptop (or desktop, no haters here)
+# into an awesome development machine.
+
+fancy_echo() {
+  local fmt="$1"; shift
+
+  # shellcheck disable=SC2059
+  printf "\n$fmt\n" "$@"
+}
+
+append_to_bashrc() {
+  local text="$1" bashrc
+  local skip_new_line="${2:-0}"
+
+  if [ -w "$HOME/.bashrc.local" ]; then
+    bashrc="$HOME/.bashrc.local"
+  else
+    bashrc="$HOME/.bashrc"
+  fi
+
+  if ! grep -Fqs "$text" "$bashrc"; then
+    if [ "$skip_new_line" -eq 1 ]; then
+      printf "%s\n" "$text" >> "$bashrc"
+    else
+      printf "\n%s\n" "$text" >> "$bashrc"
+    fi
+  fi
+}
+
+install_global_npm() {
+  local formulae="$1"
+  if ! command -v formula >/dev/null; then
+    npm install -g "$formulae"
+  else
+    npm update -g "$formulae"
+  fi
+}
+
+# shellcheck disable=SC2154
+trap 'ret=$?; test $ret -ne 0 && printf "failed\n\n" >&2; exit $ret' EXIT
+
+set -e
+
+if [ ! -d "$HOME/.bin/" ]; then
+  mkdir "$HOME/.bin"
+fi
+
+if [ ! -f "$HOME/.bashhrc" ]; then
+  touch "$HOME/.bashrc"
+fi
+
+if [ ! -f "$HOME/.bash_profile" ]; then
+  touch "$HOME/.bash_profile"
+fi
+
+# Load .bashrc when loading .bash_profile
+command="if [ -f ~/.bashrc ]; then
+  source ~/.bashrc
+fi"
+if  ! grep -Fqs "$command" "$HOME/.bash_profile"; then
+  printf "%s\n" "$command" >> "$HOME/.bash_profile"
+fi
+
+# shellcheck disable=SC2016
+append_to_bashrc 'export PATH="$HOME/.bin:$PATH"'
+
+if [ $(defaults read com.apple.finder AppleShowAllFiles -bool) = NO ];  then
+  defaults write com.apple.finder AppleShowAllFiles YES
+  killall Finder
+fi
+
+if ! command -v gcc >/dev/null; then
+  fancy_echo "Installing XCode command-line tools for Homebrew ..."
+  xcode-select --install
+fi
+
+HOMEBREW_PREFIX="/usr/local"
+
+if [ -d "$HOMEBREW_PREFIX" ]; then
+  if ! [ -r "$HOMEBREW_PREFIX" ]; then
+    sudo chown -R "$LOGNAME:admin" /usr/local
+  fi
+else
+  sudo mkdir "$HOMEBREW_PREFIX"
+  sudo chflags norestricted "$HOMEBREW_PREFIX"
+  sudo chown -R "$LOGNAME:admin" "$HOMEBREW_PREFIX"
+fi
+
+if ! command -v brew >/dev/null; then
+  fancy_echo "Installing Homebrew ..."
+    curl -fsS \
+      'https://raw.githubusercontent.com/Homebrew/install/master/install' | ruby
+
+    append_to_bashrc '# recommended by brew doctor'
+
+    # shellcheck disable=SC2016
+    append_to_bashrc 'export PATH="/usr/local/bin:$PATH"' 1
+
+    export PATH="/usr/local/bin:$PATH"
+fi
+
+if brew list | grep -Fq brew-cask; then
+  fancy_echo "Uninstalling old Homebrew-Cask ..."
+  brew uninstall --force brew-cask
+fi
+
+fancy_echo "Updating Homebrew formulae ..."
+brew update
+brew bundle --file=- <<EOF
+
+# Brew taps
+tap "caskroom/cask"
+tap "homebrew/completions"
+
+# Unix
+brew "bash-completion"
+brew "git"
+
+# Programming languages
+cask "java"
+cask "caskroom/versions/java7"
+brew "gradle"
+brew "node"
+
+# Browser
+cask "google-chrome"
+brew "chromedriver"
+brew "selenium-server-standalone"
+
+# Applications
+cask "atom"
+cask "dbeaver-enterprise"
+cask "docker"
+cask "intellij-idea"
+cask "slack"
+
+# Bash completions
+brew "docker-completion"
+brew "docker-compose-completion"
+brew "docker-machine-completion"
+EOF
+
+fancy_echo "Set bash completion in .bashrc"
+append_to_bashrc "if [ -f $(brew --prefix)/etc/bash_completion ]; then
+  . $(brew --prefix)/etc/bash_completion
+fi"
+
+fancy_echo "Installing node dependencies ..."
+install_global_npm "n"
+install_global_npm "gulp"
+
+if [ -f "$HOME/.laptop.local" ]; then
+  fancy_echo "Running your customizations from ~/.laptop.local ..."
+  # shellcheck disable=SC1090
+  . "$HOME/.laptop.local"
+else
+  fancy_echo "If you believe we are missing something essential, please create a PR; otherwise add it to '/.laptop.local' for local updating"
+fi
+
+rm -rf node_modules
+
+fancy_echo "YOU ARE NOW UP-TO-DATE"
