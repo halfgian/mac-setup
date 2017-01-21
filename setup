@@ -119,6 +119,7 @@ tap "homebrew/completions"
 # Unix
 brew "bash-completion"
 brew "git"
+brew "openssl"
 
 # Programming languages
 cask "java"
