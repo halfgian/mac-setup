@@ -6,15 +6,16 @@
 # into an awesome development machine.
 
 fancy_echo() {
-  local fmt="$1"; shift
+  fmt="$1"; shift
 
   # shellcheck disable=SC2059
   printf "\n$fmt\n" "$@"
 }
 
 append_to_bashrc() {
-  local text="$1" bashrc
-  local skip_new_line="${2:-0}"
+  text="$1"
+  bashrc=""
+  skip_new_line="${2:-0}"
 
   if [ -w "$HOME/.bashrc.local" ]; then
     bashrc="$HOME/.bashrc.local"
@@ -32,7 +33,7 @@ append_to_bashrc() {
 }
 
 install_global_npm() {
-  local formulae="$1"
+  formulae="$1"
   if ! command -v formula >/dev/null; then
     npm install -g "$formulae"
   else
@@ -68,6 +69,7 @@ fi
 # shellcheck disable=SC2016
 append_to_bashrc 'export PATH="$HOME/.bin:$PATH"'
 
+# shellcheck disable=SC2046
 if [ $(defaults read com.apple.finder AppleShowAllFiles -bool) = NO ];  then
   defaults write com.apple.finder AppleShowAllFiles YES
   killall Finder
