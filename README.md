@@ -31,6 +31,8 @@ curl --remote-name https://raw.githubusercontent.com/rightmove/mac-setup/master/
 ./setup 2>&1 | tee ~/laptop.log
 ```
 
+You may need to chmod the file to give it permissions on your machine.
+
 Debugging
 ---------
 
