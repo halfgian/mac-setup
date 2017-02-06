@@ -50,7 +50,7 @@ if [ ! -d "$HOME/.bin/" ]; then
   mkdir "$HOME/.bin"
 fi
 
-if [ ! -f "$HOME/.bashhrc" ]; then
+if [ ! -f "$HOME/.bashrc" ]; then
   touch "$HOME/.bashrc"
 fi
 
